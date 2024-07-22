@@ -1,5 +1,23 @@
 Build a CRUD API with Docker Node.JS Express.JS & PostgreSQL
 
+----
+Why use docker?
+
+Consistency and Reproducability:
+Everything may work perfectly on your computer when you are testing a web
+application locally, but when you pass it off to your friend, it doesn't work.
+They may have a different setup, so it doesn't work. Docker runs the server
+in a way that is the same for every computer running it.
+
+Isolation and Security:
+Each application in the website is put in its own container. If one application
+crashes, then the rest won't be affected.
+
+
+
+
+----
+
 Firstly, we will need docker desktop installed on our computer. Got it? Good!
 
 1. npm init -y
