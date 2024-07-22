@@ -1,2 +1,175 @@
 Build a CRUD API with Docker Node.JS Express.JS & PostgreSQL
 
+Firstly, we will need docker desktop installed on our computer. Got it? Good!
+
+1. npm init -y
+2. npm install express pg (pg is for PostgreSQL)
+2.5 npm install --save-dev nodemon
+3. inside scripts within package.json "dev": "nodemon server.js"
+4. create server.js
+5. create db.js
+6. Within db.js, initialize PostgreSQL. Like this:
+
+const { Pool } = require('pg')
+const pool = new Pool({
+  host: 'db',
+  port: 5432,
+  user: 'user123',
+  password: 'password123',
+  database: 'db123'
+})
+
+module.exports = pool
+
+I'm sure the username and password can be different. We will need this
+information for our compose.yml file. Also, the module.exports statement
+allows us to require the database into our server.js
+
+7. Go into server.js and do the EAPL stuff, along with importing the pool from db.js.
+Here's a reminder in case you forgot:
+
+const express = require('express')
+const app = express()
+const PORT = 5432
+
+const pool = require('./db')
+
+
+app.listen(PORT, () => {console.log("listening on port ", PORT)})
+
+8. Make some template routes inside server.js
+9. Make a test.rest file. Remember to have REST client installed on VS code.
+10. Don't forget the app.use(express.json())
+
+***
+Make sure when sending a POST request in test.rest, the body is one line
+separated from the header. 
+
+Also, all requests to fetch data from a database are aysnc
+
+11. Look at the app.get('/setup') route. Here, we call from our database
+in a try catch block.
+
+  try {
+    await pool.query()
+  } catch (err) {
+    console.log(err)
+    res.sendStatus(500)
+  }
+
+Within the query statement, we use SQL terminology. 
+For docs on SQL terminology, visit w3schools.
+
+Something like this...
+
+    await pool.query('CREATE TABLE schools( id SERIAL PRIMARY KEY, name VARCHAR(100), address VARCHAR(100))')
+
+Creates a table for us.
+
+12. We can insert into this table from a post request with this syntax...
+
+app.post('/', async (req, res) => {
+  const { name, location } = req.body
+  try {
+    await pool.query('INSERT INTO schools (name, address) VALUES ($1, $2)', [name, location])
+    res.status(200).send({message: "successfully added child"})
+  } catch (err) {
+    console.log(err)
+    res.sendStatus(500)
+  }
+})
+
+The second argument in query is the array of values to pass in.
+
+13. Let's display our table from SQL with this GET request...
+
+app.get('/', async (req, res) => {
+  const { name, location } = req.body
+  try {
+    await pool.query('SELECT * FROM schools')
+    res.status(200).send(data.rows)
+  } catch (err) {
+    console.log(err)
+    res.sendStatus(500)
+  }
+})
+
+Now we are done setting up the server.
+
+
+14. We want to test the server to see that it works, then we wanna set it up
+in docker.
+
+15. Open up a Dockerfile.
+
+**
+'Dockerfiles' create an environment that is going to be the same on anyone's device. Just like
+how we can run server.js on our localhost, we can run it in docker, but we need to set it
+up first before we run anything.
+
+16. 
+FROM node:16     // we install node
+
+WORKDIR /usr/src/app    // we set the docker container inside our root working directory
+
+COPY package*.json ./       // we copy everything inside package.json into the route.
+RUN npm install       // This installs node modules from everything in our package.json
+
+COPY . .        // This copies all files in our root directory (all of it like db.js, server.js, etc) into the docker root directory.
+
+EXPOSE 5432     // This is the port that the docker container listens on.
+CMD ["npm", "run", "dev"]       // command line to be run. 
+
+
+16. Now we can make our docker-compose.yaml file. This will save us from having to execute
+a bunch of docker containers independently. This is going to host our database and server.
+
+Here are both of the containers:
+
+ version: "3"
+ services: 
+  db:
+    image: postgre
+    environment:
+      POSTGRES_PASSWORD: password123
+      POSTGRES_USER: user123
+      POSTGRES_DB: db123
+  app:
+    image: my-node-app
+    ports: 
+      - 13000:3000
+
+
+17. We need to build the image in the app container. In the terminal, type
+docker build -t my-node-app .
+17.5. We need to run docker login and put in our credentials for this to work.
+
+Once we run this, docker starts to build our app.
+
+18. To see if this worked, we can type in
+docker images
+
+And see all of the dockers we've created.
+
+19. Now our code is going to be accessible for our compose.yaml file. 
+We can run
+docker compose up
+
+20. Since this didn't work, we can run
+docker system prune
+to get things back in blood.
+
+Let's rerun the build docker cmd in step 17.
+
+21. Make sure to spell everything correctly in the .yaml file. I had
+misspelled "postgres" for the image section.
+
+22. Now the system is ready to take network requests! In the desktop docker,
+it says so. We use the 13000 number in our network requests. Like this...
+
+GET http://localhost:13000/setup
+
+
+NOTES TIPS
+Make sure everything works in your server before you add it to the docker build!
+Spell everything correctly.
